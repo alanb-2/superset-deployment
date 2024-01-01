@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: &app superset
+    component: &component master
+  name: superset-service
+  namespace: superset
+spec:
+  ports:
+  - name: http-port
+    port: 8088
+    protocol: TCP
+    targetPort: http-port
+  selector:
+    app: *app
+    component: *component
+  type: ClusterIP

@@ -22,16 +22,20 @@ spec:
       containers:
       - name: superset-redis-container
         image: redis:7.2.3
-        imagePullPolicy: IfNotPresent
         command:
         - redis-server
         - "/usr/local/etc/redis/redis.conf"
         - --requirepass
         - $(REDIS_PASSWORD)
-        ports:
-        - name: tcp-port
-          protocol: TCP
-          containerPort: 6379
+        env:
+        - name: MASTER
+          value: "true"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: superset-redis-secret
+              key: password
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
           exec: &healthcheck
@@ -43,34 +47,21 @@ spec:
           periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 5
+        ports:
+        - name: tcp-port
+          protocol: TCP
+          containerPort: 6379
         readinessProbe:
           failureThreshold: 3
           exec: *healthcheck
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 5
-        startupProbe:
-          exec: *healthcheck
-          failureThreshold: 30
-          periodSeconds: 10
         resources:
           limits: {}
           requests:
             cpu: 250m
             memory: 256Mi
-        env:
-        - name: MASTER
-          value: "true"
-        - name: REDIS_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: superset-redis-secret
-              key: password
-        volumeMounts:
-        - mountPath: /data
-          name: superset-redis-volume
-        - mountPath: /usr/local/etc/redis
-          name: config
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
@@ -80,6 +71,15 @@ spec:
           runAsGroup: 999
           runAsNonRoot: true
           runAsUser: 999
+        startupProbe:
+          exec: *healthcheck
+          failureThreshold: 30
+          periodSeconds: 10
+        volumeMounts:
+        - mountPath: /data
+          name: superset-redis-volume
+        - mountPath: /usr/local/etc/redis
+          name: config
       securityContext:
         fsGroup: 999
       volumes:

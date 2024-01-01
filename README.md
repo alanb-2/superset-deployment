@@ -26,24 +26,33 @@ Note that the Docker image name and tag should be changed to the local name used
 
 ### Initialise cluster
 
-1.  Create the cluster:
+1. Create the cluster:
     ```shell
     $ sudo kind create cluster --name superset
     ```
-2.  Set the kubectl context to use the cluster:
-   ```shell
-   $ sudo kubectl cluster-info --context kind-superset
-   ```
-3.  Load the Superset Docker image onto the cluster:
-   ```shell
-   $ sudo kind load docker-image alanb-2/superset:2.1.3 --name superset
-   ```
+2. Set the kubectl context to use the cluster:
+    ```shell
+    $ sudo kubectl cluster-info --context kind-superset
+    ```
+3. Load the Superset Docker image onto the cluster:
+    ```shell
+    $ sudo kind load docker-image alanb-2/superset:2.1.3 --name superset
+    ```
 
-### Deploy Superset
+### Run Superset
 
-```shell
-sudo kubectl create -f ./k8s
-```
+1. Deploy the Superset components:
+    ```shell
+    sudo kubectl apply -f ./k8s
+    ```
+2. Execute the initialisation step
+    1. Change the final 7-hexadecimal characters of `.metadata.name` to new values
+    2. Change `.spec.template.spec.containers[].env[].INIT_JOB` to `true` 
+3. Port forward to enable local access of the service:
+    ```shell
+    sudo kubectl port-forward service/superset-service 8088:8088
+    ```
+4. Open a browser and enter `localhost:8088` followed by `admin` and `admin` for the username and password respectively.
 
 ### Remove Superset
 
