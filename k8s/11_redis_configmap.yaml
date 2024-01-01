@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: superset-redis-config
+  namespace: superset
+  labels:
+    app: redis
+data:
+  redis-config: |
+    dir /data

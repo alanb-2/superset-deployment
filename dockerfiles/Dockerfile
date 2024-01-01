@@ -14,6 +14,6 @@ RUN wget -q https://github.com/mozilla/geckodriver/releases/download/v${GECKODRI
     rm ${ARCHIVE_FILENAME}
 
 RUN python -m pip install --upgrade --proxy=http://127.0.0.1:3128 pip
-RUN pip install --no-cache authlib gevent psycopg2 redis
+RUN pip install --no-cache gevent psycopg2 redis
 
 USER superset

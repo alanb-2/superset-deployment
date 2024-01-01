@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: &name superset-redis-statefulset
+  namespace: superset
+  labels: 
+   app: &app redis
+spec:
+  replicas: 1
+  serviceName: superset-redis-headless
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: *app
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+     labels:
+       app: *app
+    spec:
+      containers:
+      - name: superset-redis-container
+        image: redis:7.2.3
+        imagePullPolicy: IfNotPresent
+        command:
+        - redis-server
+        - "/usr/local/etc/redis/redis.conf"
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        ports:
+        - name: tcp-port
+          protocol: TCP
+          containerPort: 6379
+        livenessProbe:
+          failureThreshold: 3
+          exec: &healthcheck
+            command:
+            - /bin/sh
+            - -c
+            - redis-cli
+            - ping
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 3
+          exec: *healthcheck
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        startupProbe:
+          exec: *healthcheck
+          failureThreshold: 30
+          periodSeconds: 10
+        resources:
+          limits: {}
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        env:
+        - name: MASTER
+          value: "true"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: superset-redis-secret
+              key: password
+        volumeMounts:
+        - mountPath: /data
+          name: superset-redis-volume
+        - mountPath: /usr/local/etc/redis
+          name: config
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+          runAsGroup: 999
+          runAsNonRoot: true
+          runAsUser: 999
+      securityContext:
+        fsGroup: 999
+      volumes:
+      - name: config
+        configMap:
+          name: superset-redis-config
+          items:
+          - key: redis-config
+            path: redis.conf
+  volumeClaimTemplates:
+  - metadata:
+      name: superset-redis-volume
+      namespace: superset
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 500Mi

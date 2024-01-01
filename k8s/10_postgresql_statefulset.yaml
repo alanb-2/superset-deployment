@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: superset-postgresql-statefulset
+  namespace: superset
+  labels:
+    app: &app postgresql
+spec:
+  replicas: 1
+  serviceName: superset-postgresql-headless
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: *app
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: *app
+    spec:
+      containers:
+      - name: superset-postgresql-container
+        image: postgres:16.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: tcp-port
+          protocol: TCP
+          containerPort: 5432
+        livenessProbe:
+          failureThreshold: 3
+          exec: &healthcheck
+            command:
+            - /bin/sh
+            - -c
+            - pg_isready -U $POSTGRES_USER
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
+        readinessProbe:
+          failureThreshold: 3
+          exec: *healthcheck
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        startupProbe:
+          exec: *healthcheck
+          failureThreshold: 30
+          periodSeconds: 10
+        resources:
+          limits: {}
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        env:
+        - name: PGDATA
+          value: /data/pgdata
+        - name: POSTGRES_DB
+          value: superset
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: superset-postgresql-secret
+              key: password
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: superset-postgresql-secret
+              key: username
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsGroup: 0
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /data
+          name: superset-postgresql-volume
+  volumeClaimTemplates:
+  - metadata:
+      name: superset-postgresql-volume
+      namespace: superset
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi
