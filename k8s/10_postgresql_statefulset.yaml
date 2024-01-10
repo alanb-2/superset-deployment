@@ -21,18 +21,16 @@ spec:
     spec:
       containers:
       - name: superset-postgresql-container
-        image: postgres:16.1
+        image: bitnami/postgresql:16.1.0
         env:
-        - name: PGDATA
-          value: /data/pgdata
-        - name: POSTGRES_DB
+        - name: POSTGRESQL_DATABASE
           value: superset
-        - name: POSTGRES_PASSWORD
+        - name: POSTGRESQL_PASSWORD
           valueFrom:
             secretKeyRef:
               name: superset-postgresql-secret
               key: password
-        - name: POSTGRES_USER
+        - name: POSTGRESQL_USERNAME
           valueFrom:
             secretKeyRef:
               name: superset-postgresql-secret
@@ -44,7 +42,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - pg_isready -U $POSTGRES_USER
+            - pg_isready -U $POSTGRESQL_USERNAME
           periodSeconds: 30
           successThreshold: 1
           timeoutSeconds: 5
@@ -65,15 +63,21 @@ spec:
             memory: 256Mi
         securityContext:
           allowPrivilegeEscalation: false
-          runAsGroup: 0
-          runAsUser: 0
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1001
         startupProbe:
           exec: *healthcheck
           failureThreshold: 30
           periodSeconds: 10  
         volumeMounts:
-        - mountPath: /data
+        - mountPath: /data/pgdata:/bitnami/postgresql
           name: superset-postgresql-volume
+      securityContext:
+        fsGroup: 1001
+        fsGroupChangePolicy: "OnRootMismatch"
   volumeClaimTemplates:
   - metadata:
       name: superset-postgresql-volume
