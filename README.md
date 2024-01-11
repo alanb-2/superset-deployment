@@ -59,3 +59,19 @@ Note that the Docker image name and tag should be changed to the local name used
 ```shell
 sudo kubectl delete -f ./k8s
 ```
+
+## Helm
+
+1. Package the chart
+    ```shell
+    helm package helm/.
+    ```
+2. Install the chart
+    ```shell
+    helm install superset superset-0.1.0.tgz
+    ```
+3. Port forward to enable local access of the service:
+    ```shell
+    sudo kubectl port-forward service/superset-service 8088:8088
+    ```
+4. Open a browser and enter `localhost:8088` followed by `admin` and `admin` for the username and password respectively.

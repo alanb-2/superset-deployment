@@ -1,0 +1,24 @@
+# VCS
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+
+# common files
+*.swp
+*.bak
+*.tgz
+*.tmp
+*.orig
+*~
+
+# intellij
+.bsp
+.idea
+*.iml
+
+# vscode
+.vscode
